@@ -1,4 +1,4 @@
-name: Release
+name: Publish to PyPI
 
 on:
   release:
@@ -7,79 +7,21 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write  # Required for trusted publishing
+      contents: read
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: latest
-
-    - name: Cache uv dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/uv
-          .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-uv-
-
-    - name: Install dependencies
-      run: uv sync
-
-    - name: Run tests before release
-      run: uv run pytest tests/ --cov=src --cov-fail-under=65
-
-    - name: Build package
-      run: uv build
-
-    - name: Publish to PyPI (Trusted Publisher)
-      run: |
-        # Configure uv for trusted publisher OIDC
-        uv config set pypi.trusted-publisher true
-        uv config set pypi.trusted-publisher.audience "https://pypi.org"
-        uv publish
-      env:
-        # For trusted publisher OIDC - GitHub provides the token automatically
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # For API token method, uncomment the line below and add PYPI_API_TOKEN to secrets
-      # env:
-      #   UV_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-
-    - name: Create GitHub Release
-      run: |
-        gh release create ${{ github.ref_name }} \
-          --title "Release ${{ github.ref_name }}" \
-          --notes "## What's Changed
-        
-        This release includes:
-        - OpenAPI Navigator MCP server
-        - Support for both OpenAPI 3.0 and Swagger 2.0 specifications
-        - Comprehensive search and navigation tools
-        - Full test coverage and quality assurance
-        
-        ## Installation
-        
-        \`\`\`bash
-        pip install openapi-navigator
-        \`\`\`
-        
-        ## Usage
-        
-        \`\`\`bash
-        openapi-navigator
-        \`\`\`
-        
-        ## Documentation
-        
-        See the [README](https://github.com/${{ github.repository }}) for full documentation."
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Run tests before release
+        run: uv run pytest tests/ --cov=src --cov-fail-under=65
+      
+      - name: Build and publish
+        run: uv publish

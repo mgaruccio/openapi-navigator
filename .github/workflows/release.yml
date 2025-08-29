@@ -23,5 +23,8 @@ jobs:
       - name: Run tests before release
         run: uv run pytest tests/ --cov=src --cov-fail-under=65
       
-      - name: Build and publish
+      - name: Build package
+        run: uv build
+      
+      - name: Publish to PyPI
         run: uv publish

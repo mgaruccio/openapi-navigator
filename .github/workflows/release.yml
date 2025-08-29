@@ -42,8 +42,14 @@ jobs:
       run: uv build
 
     - name: Publish to PyPI (Trusted Publisher)
-      run: uv publish
-      # For trusted publisher (OIDC) - no token needed
+      run: |
+        # Configure uv for trusted publisher OIDC
+        uv config set pypi.trusted-publisher true
+        uv config set pypi.trusted-publisher.audience "https://pypi.org"
+        uv publish
+      env:
+        # For trusted publisher OIDC - GitHub provides the token automatically
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # For API token method, uncomment the line below and add PYPI_API_TOKEN to secrets
       # env:
       #   UV_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

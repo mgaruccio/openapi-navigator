@@ -1,5 +1,9 @@
 # OpenAPI Navigator
 
+[![CI](https://github.com/mikegaruccio/openapi-navigator/workflows/CI/badge.svg)](https://github.com/mikegaruccio/openapi-navigator/actions/workflows/ci.yml)
+[![Build](https://github.com/mikegaruccio/openapi-navigator/workflows/Build/badge.svg)](https://github.com/mikegaruccio/openapi-navigator/actions/workflows/build.yml)
+[![Release](https://github.com/mikegaruccio/openapi-navigator/workflows/Release/badge.svg)](https://github.com/mikegaruccio/openapi-navigator/actions/workflows/release.yml)
+
 An MCP (Model Context Protocol) server that provides tools for navigating and querying OpenAPI specifications. This server makes it easy for AI agents to explore, search, and understand OpenAPI specs without having to manually parse complex JSON/YAML files.
 
 ## Features
@@ -171,6 +175,72 @@ uv run fastmcp inspect src/openapi_mcp/server.py
 ```
 
 This will generate a `server-info.json` file with detailed information about all available tools.
+
+## CI/CD Pipeline
+
+The OpenAPI Navigator uses GitHub Actions for continuous integration and deployment.
+
+### Workflows
+
+#### 🔄 **CI** (`ci.yml`)
+- **Triggers**: Pull requests and pushes to main
+- **Runs**: Tests on Python 3.10, 3.11, and 3.12
+- **Features**:
+  - Full test suite execution
+  - Code coverage reporting
+  - Linting and formatting checks with ruff
+  - Code formatting with black
+
+#### 🏗️ **Build** (`build.yml`)
+- **Triggers**: Merges to main branch
+- **Features**:
+  - Comprehensive testing
+  - Package building
+  - Code quality checks
+  - Artifact uploads
+
+#### 🚀 **Release** (`release.yml`)
+- **Triggers**: GitHub releases
+- **Features**:
+  - Automatic PyPI publishing (supports trusted publisher OIDC)
+  - GitHub release creation
+  - Pre-release testing
+
+#### 📦 **Dependencies** (`dependencies.yml`)
+- **Triggers**: Weekly (Mondays) + manual
+- **Features**:
+  - Automatic dependency updates
+  - Pull request creation
+  - Test validation
+
+### Setup Requirements
+
+#### **Option 1: Trusted Publisher (Recommended)**
+1. **PyPI Account**: Create account at [pypi.org](https://pypi.org)
+2. **Configure Trusted Publisher**: In PyPI settings, add GitHub as a trusted publisher
+3. **Push to GitHub**: Workflows will automatically activate
+
+#### **Option 2: API Token (Traditional)**
+1. **PyPI Account**: Create account at [pypi.org](https://pypi.org)
+2. **Generate API Token**: In PyPI settings, create an API token
+3. **GitHub Secrets**: Add `PYPI_API_TOKEN` with your PyPI token
+4. **Update Workflow**: Uncomment the `UV_TOKEN` line in `.github/workflows/release.yml`
+5. **Push to GitHub**: Workflows will automatically activate
+
+### Release Process
+
+1. **Create Release**: Tag a new version in GitHub
+2. **Automated Testing**: CI runs full test suite
+3. **Package Building**: Creates distributable packages
+4. **PyPI Publishing**: Automatically publishes to PyPI
+5. **Release Notes**: Generates comprehensive release notes
+
+### Quality Gates
+
+- ✅ **Test Coverage**: Minimum 65% required
+- ✅ **All Tests Pass**: Unit and integration tests
+- ✅ **Code Quality**: Linting and formatting with ruff and black
+- ✅ **Dependencies**: Up-to-date and secure
 
 ## Architecture
 

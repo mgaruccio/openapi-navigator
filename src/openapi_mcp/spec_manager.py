@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Any
 import yaml
 import requests
 from jsonschema import validate, ValidationError
-from jsonschema.validators import Draft7Validator
 
 logger = logging.getLogger(__name__)
 

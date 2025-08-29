@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: latest
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Run tests before release
+      run: uv run pytest tests/ --cov=src --cov-fail-under=65
+
+    - name: Build package
+      run: uv build
+
+    - name: Publish to PyPI (Trusted Publisher)
+      run: uv publish
+      # For trusted publisher (OIDC) - no token needed
+      # For API token method, uncomment the line below and add PYPI_API_TOKEN to secrets
+      # env:
+      #   UV_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref_name }}
+        body: |
+          ## What's Changed
+          
+          This release includes:
+          - OpenAPI Navigator MCP server
+          - Support for both OpenAPI 3.0 and Swagger 2.0 specifications
+          - Comprehensive search and navigation tools
+          - Full test coverage and quality assurance
+          
+          ## Installation
+          
+          ```bash
+          pip install openapi-navigator
+          ```
+          
+          ## Usage
+          
+          ```bash
+          openapi-navigator
+          ```
+          
+          ## Documentation
+          
+          See the [README](https://github.com/${{ github.repository }}) for full documentation.
+        draft: false
+        prerelease: false

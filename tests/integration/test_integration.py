@@ -1,6 +1,5 @@
 """Integration tests for the OpenAPI Navigator."""
 
-import pytest
 import tempfile
 import json
 import os
@@ -265,7 +264,7 @@ class TestIntegrationWorkflows:
 
         try:
             # Load specification
-            spec_id = manager.load_spec_from_file(temp_file, "test-spec")
+            manager.load_spec_from_file(temp_file, "test-spec")
             spec = manager.get_spec("test-spec")
 
             # Test endpoint search variations

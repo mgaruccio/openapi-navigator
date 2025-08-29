@@ -4,7 +4,7 @@ import pytest
 import json
 import tempfile
 import os
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 from openapi_mcp.spec_manager import SpecManager, OpenAPISpec
 
 

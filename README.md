@@ -95,10 +95,73 @@ The OpenAPI Navigator provides the following tools:
 
 ### Testing
 
-Run the integration tests:
+The OpenAPI Navigator includes a comprehensive test suite with both unit and integration tests.
+
+#### Running Tests
+
+**All tests:**
 ```bash
-uv run python test_integration.py
+uv run pytest
 ```
+
+**Unit tests only (fast):**
+```bash
+uv run pytest tests/unit/
+```
+
+**Integration tests only:**
+```bash
+uv run pytest tests/integration/
+```
+
+**With coverage report:**
+```bash
+uv run pytest --cov=src --cov-report=html
+```
+
+#### Using the Makefile
+
+For convenience, a Makefile is provided with common test targets:
+
+```bash
+# Run all tests
+make test
+
+# Run only unit tests (fast feedback)
+make test-unit
+
+# Run integration tests
+make test-integration
+
+# Run tests with coverage report
+make test-cov
+
+# Clean up generated files
+make clean
+
+# Format code
+make format
+
+# Lint code
+make lint
+```
+
+#### Test Structure
+
+- **`tests/unit/`** - Unit tests for individual components
+  - `test_spec_manager.py` - Tests for the core specification management
+- **`tests/integration/`** - Integration tests for complete workflows
+  - `test_integration.py` - End-to-end workflow testing
+- **`tests/conftest.py`** - Shared test fixtures and configuration
+
+#### Test Coverage
+
+The test suite aims for at least 65% code coverage and includes:
+- **31 unit tests** covering core functionality
+- **5 integration tests** covering complete workflows
+- **Mock testing** for external dependencies
+- **Error handling** validation
+- **Edge case** coverage
 
 ### Inspecting the Server
 

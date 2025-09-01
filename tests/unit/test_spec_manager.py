@@ -5,7 +5,7 @@ import json
 import tempfile
 import os
 from unittest.mock import Mock, patch
-from openapi_mcp.spec_manager import SpecManager, OpenAPISpec
+from openapi_navigator.spec_manager import SpecManager, OpenAPISpec
 
 
 class TestOpenAPISpec:

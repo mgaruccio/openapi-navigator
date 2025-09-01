@@ -3,7 +3,7 @@
 import tempfile
 import json
 import os
-from openapi_mcp.spec_manager import SpecManager
+from openapi_navigator.spec_manager import SpecManager
 
 
 class TestIntegrationWorkflows:

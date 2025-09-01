@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, List, Optional, Any
 from fastmcp import FastMCP
-from openapi_mcp.spec_manager import SpecManager
+from openapi_navigator.spec_manager import SpecManager
 
 logger = logging.getLogger(__name__)
 

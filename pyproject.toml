@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-openapi-navigator = "openapi_mcp:main"
+openapi-navigator = "openapi_navigator:main"
 
 [build-system]
 requires = ["hatchling"]

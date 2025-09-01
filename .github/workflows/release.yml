@@ -28,7 +28,6 @@ jobs:
         run: uv build
       
       - name: Publish to PyPI
-        if: github.event_name == 'release'  # Only publish on actual releases
         run: uv publish
       
       - name: Test mode message

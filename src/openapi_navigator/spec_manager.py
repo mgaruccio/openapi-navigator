@@ -356,16 +356,16 @@ class SpecManager:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
 
-            content_type = response.headers.get("content-type", "")
-            content_text = response.text.strip()
-            
-            # Check if it's YAML by looking at the content or content-type
-            if ("yaml" in content_type or "yml" in content_type or 
-                content_text.startswith("openapi:") or 
-                content_text.startswith("swagger:")):
-                spec_data = yaml.safe_load(content_text)
-            else:
+            # Robust format detection: try JSON first, fall back to YAML
+            try:
+                # Try JSON first (most common and fastest to parse)
                 spec_data = response.json()
+            except (ValueError, TypeError):
+                # If JSON fails, try YAML
+                try:
+                    spec_data = yaml.safe_load(response.text)
+                except yaml.YAMLError as e:
+                    raise ValueError(f"Failed to parse as JSON or YAML: {e}")
 
             return self._load_spec(spec_data, spec_id or f"url:{url}")
 

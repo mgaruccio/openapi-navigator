@@ -206,6 +206,7 @@ class TestSpecManager:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.content = json.dumps(sample_openapi_spec).encode()
+        mock_response.text = json.dumps(sample_openapi_spec)
         mock_response.headers = {"content-type": "application/json"}
         mock_response.json.return_value = sample_openapi_spec
         mock_get.return_value = mock_response
@@ -225,6 +226,7 @@ class TestSpecManager:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.content = json.dumps(sample_openapi_spec).encode()
+        mock_response.text = json.dumps(sample_openapi_spec)
         mock_response.headers = {"content-type": "application/json"}
         mock_response.json.return_value = sample_openapi_spec
         mock_get.return_value = mock_response
@@ -234,6 +236,29 @@ class TestSpecManager:
 
         assert spec_id.startswith("url:")
         assert spec_id in manager.specs
+
+    @patch("requests.get")
+    def test_load_spec_from_url_yaml_content(self, mock_get, sample_openapi_spec):
+        """Test loading YAML spec from URL."""
+        import yaml
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        yaml_content = yaml.dump(sample_openapi_spec)
+        mock_response.text = yaml_content
+        mock_response.headers = {"content-type": "application/vnd.oai.openapi"}
+        # Make JSON parsing fail so it falls back to YAML
+        mock_response.json.side_effect = ValueError("Not JSON")
+        mock_get.return_value = mock_response
+
+        manager = SpecManager()
+        spec_id = manager.load_spec_from_url(
+            "https://example.com/api.yaml", "yaml-test"
+        )
+
+        assert spec_id == "yaml-test"
+        assert "yaml-test" in manager.specs
+        assert manager.specs["yaml-test"].spec_id == "yaml-test"
 
     @patch("requests.get")
     def test_load_spec_from_url_http_error(self, mock_get):

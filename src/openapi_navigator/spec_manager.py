@@ -357,8 +357,13 @@ class SpecManager:
             response.raise_for_status()
 
             content_type = response.headers.get("content-type", "")
-            if "yaml" in content_type or "yml" in content_type:
-                spec_data = yaml.safe_load(response.text)
+            content_text = response.text.strip()
+            
+            # Check if it's YAML by looking at the content or content-type
+            if ("yaml" in content_type or "yml" in content_type or 
+                content_text.startswith("openapi:") or 
+                content_text.startswith("swagger:")):
+                spec_data = yaml.safe_load(content_text)
             else:
                 spec_data = response.json()
 

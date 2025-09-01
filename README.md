@@ -18,31 +18,65 @@ An MCP (Model Context Protocol) server that provides tools for navigating and qu
 
 ## Installation
 
-This project uses `uv` for dependency management. Install dependencies with:
+The OpenAPI Navigator is available on PyPI and can be installed using `uvx` (recommended) or `pip`:
 
 ```bash
-uvx sync
+# Using uvx (recommended)
+uvx openapi-navigator
+
+# Or install globally with pip
+pip install openapi-navigator
 ```
 
 ## Usage
 
-### Running the Server
+### MCP Configuration
 
-The server can be run in several ways:
+Add the OpenAPI Navigator to your MCP client configuration:
 
-#### 1. Using the package command (recommended)
-```bash
-uvx openapi-navigator
+#### For Cursor
+Add to your Cursor MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "openapi-navigator": {
+      "command": "uvx",
+      "args": ["openapi-navigator"],
+      "env": {}
+    }
+  }
+}
 ```
 
-#### 2. Using FastMCP CLI (local development)
-```bash
-uv run fastmcp run src/openapi_mcp/server.py --transport stdio
+#### For Claude Desktop
+Add to your Claude Desktop configuration file (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "openapi-navigator": {
+      "command": "uvx",
+      "args": ["openapi-navigator"],
+      "env": {}
+    }
+  }
+}
 ```
 
-#### 3. Using FastMCP CLI with HTTP transport (local development)
-```bash
-uv run fastmcp run src/openapi_mcp/server.py --transport http --host 127.0.0.1 --port 8000
+#### For Code
+Add to your Code MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "openapi-navigator": {
+      "command": "uvx",
+      "args": ["openapi-navigator"],
+      "env": {}
+    }
+  }
+}
 ```
 
 ## Available Tools
@@ -171,7 +205,7 @@ The test suite aims for at least 65% code coverage and includes:
 
 Use FastMCP CLI to inspect the server:
 ```bash
-uv run fastmcp inspect src/openapi_mcp/server.py
+uvx fastmcp inspect openapi-navigator
 ```
 
 This will generate a `server-info.json` file with detailed information about all available tools.

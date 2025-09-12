@@ -1,6 +1,6 @@
 [project]
 name = "openapi-navigator"
-version = "0.2.0"
+version = "0.3.0"
 description = "OpenAPI Navigator - MCP server for navigating OpenAPI specifications"
 readme = "README.md"
 authors = [{ name = "Mike Garuccio", email = "mike.garuccio@expedient.com" }]

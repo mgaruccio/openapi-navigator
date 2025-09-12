@@ -1,7 +1,10 @@
 """OpenAPI Navigator - Tools for navigating OpenAPI specifications."""
 
 import logging
+import time
+import json as json_module
 from typing import Dict, List, Optional, Any
+import requests
 from fastmcp import FastMCP
 from openapi_navigator.spec_manager import SpecManager
 
@@ -187,6 +190,164 @@ def get_spec_metadata(spec_id: str) -> Dict[str, Any]:
         raise ValueError(f"No spec found with ID: {spec_id}")
 
     return spec.get_spec_metadata()
+
+
+def _make_api_request_impl(
+    url: str,
+    method: str = "GET",
+    headers: Optional[Dict[str, str]] = None,
+    params: Optional[Dict[str, str]] = None,
+    data: Optional[str] = None,
+    timeout: int = 30,
+) -> Dict[str, Any]:
+    """
+    Make a generic REST API request with full control over method, headers, parameters, and body.
+
+    This tool enables direct interaction with REST APIs, complementing the OpenAPI exploration tools
+    by allowing you to actually call the endpoints you've discovered.
+
+    Args:
+        url: The full URL to make the request to
+        method: HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS). Defaults to GET.
+        headers: Optional dictionary of HTTP headers to include in the request
+        params: Optional dictionary of URL parameters to append to the URL
+        data: Optional request body data as a string (JSON, XML, form data, etc.)
+        timeout: Request timeout in seconds. Defaults to 30.
+
+    Returns:
+        Dictionary containing:
+        - status_code: HTTP status code
+        - headers: Response headers as a dictionary
+        - body: Raw response body as string
+        - json: Parsed JSON response (if response is valid JSON, otherwise None)
+        - url: Final URL after any redirects
+        - elapsed_ms: Request duration in milliseconds
+        - method: The HTTP method that was used
+
+    Raises:
+        ValueError: If the URL is invalid or method is not supported
+        ConnectionError: If the request fails due to network issues
+        TimeoutError: If the request times out
+    """
+    # Validate method
+    valid_methods = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+    method = method.upper()
+    if method not in valid_methods:
+        raise ValueError(
+            f"Invalid HTTP method: {method}. Must be one of {valid_methods}"
+        )
+
+    # Validate URL
+    if not url or not isinstance(url, str):
+        raise ValueError("URL must be a non-empty string")
+
+    try:
+        # Prepare the request
+        request_kwargs = {
+            "method": method,
+            "url": url,
+            "timeout": timeout,
+        }
+
+        if headers:
+            request_kwargs["headers"] = headers
+
+        if params:
+            request_kwargs["params"] = params
+
+        if data:
+            request_kwargs["data"] = data
+
+        # Make the request and time it
+        start_time = time.time()
+        logger.info(f"Making {method} request to {url}")
+
+        response = requests.request(**request_kwargs)
+
+        end_time = time.time()
+        elapsed_ms = int((end_time - start_time) * 1000)
+
+        # Parse JSON response if possible
+        response_json = None
+        try:
+            if response.text.strip():  # Only try to parse if there's content
+                response_json = response.json()
+        except (json_module.JSONDecodeError, ValueError):
+            # Response is not JSON, that's fine
+            pass
+
+        # Build response dictionary
+        result = {
+            "status_code": response.status_code,
+            "headers": dict(response.headers),
+            "body": response.text,
+            "json": response_json,
+            "url": response.url,
+            "elapsed_ms": elapsed_ms,
+            "method": method,
+        }
+
+        logger.info(
+            f"Request completed: {method} {url} -> {response.status_code} ({elapsed_ms}ms)"
+        )
+        return result
+
+    except requests.exceptions.Timeout as e:
+        logger.error(f"Request timed out: {method} {url}")
+        raise TimeoutError(f"Request timed out after {timeout} seconds: {str(e)}")
+
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error: {method} {url} - {str(e)}")
+        raise ConnectionError(f"Failed to connect to {url}: {str(e)}")
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request failed: {method} {url} - {str(e)}")
+        raise Exception(f"Request failed: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Unexpected error during request: {method} {url} - {str(e)}")
+        raise Exception(f"Unexpected error: {str(e)}")
+
+
+@mcp.tool
+def make_api_request(
+    url: str,
+    method: str = "GET",
+    headers: Optional[Dict[str, str]] = None,
+    params: Optional[Dict[str, str]] = None,
+    data: Optional[str] = None,
+    timeout: int = 30,
+) -> Dict[str, Any]:
+    """
+    Make a generic REST API request with full control over method, headers, parameters, and body.
+
+    This tool enables direct interaction with REST APIs, complementing the OpenAPI exploration tools
+    by allowing you to actually call the endpoints you've discovered.
+
+    Args:
+        url: The full URL to make the request to
+        method: HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS). Defaults to GET.
+        headers: Optional dictionary of HTTP headers to include in the request
+        params: Optional dictionary of URL parameters to append to the URL
+        data: Optional request body data as a string (JSON, XML, form data, etc.)
+        timeout: Request timeout in seconds. Defaults to 30.
+
+    Returns:
+        Dictionary containing:
+        - status_code: HTTP status code
+        - headers: Response headers as a dictionary
+        - body: Raw response body as string
+        - json: Parsed JSON response (if response is valid JSON, otherwise None)
+        - url: Final URL after any redirects
+        - elapsed_ms: Request duration in milliseconds
+        - method: The HTTP method that was used
+
+    Raises:
+        ValueError: If the URL is invalid or method is not supported
+        ConnectionError: If the request fails due to network issues
+        TimeoutError: If the request times out
+    """
+    return _make_api_request_impl(url, method, headers, params, data, timeout)
 
 
 def main():

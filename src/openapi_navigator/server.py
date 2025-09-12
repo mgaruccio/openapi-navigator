@@ -313,11 +313,11 @@ def _make_api_request_impl(
 def make_api_request(
     url: str,
     method: str = "GET",
-    headers: Optional[Dict[str, str]] = None,
-    params: Optional[Dict[str, str]] = None,
-    data: Optional[str] = None,
+    headers: dict = None,
+    params: dict = None,
+    data: str = None,
     timeout: int = 30,
-) -> Dict[str, Any]:
+) -> dict:
     """
     Make a generic REST API request with full control over method, headers, parameters, and body.
 
@@ -327,9 +327,9 @@ def make_api_request(
     Args:
         url: The full URL to make the request to
         method: HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS). Defaults to GET.
-        headers: Optional dictionary of HTTP headers to include in the request
-        params: Optional dictionary of URL parameters to append to the URL
-        data: Optional request body data as a string (JSON, XML, form data, etc.)
+        headers: Dictionary of HTTP headers to include in the request (optional)
+        params: Dictionary of URL parameters to append to the URL (optional)
+        data: Request body data as a string (JSON, XML, form data, etc.) (optional)
         timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:

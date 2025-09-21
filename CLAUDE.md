@@ -18,13 +18,17 @@ OpenAPI Navigator is a Model Context Protocol (MCP) server that provides tools f
 uv run pytest
 make test
 
-# Run unit tests only (fast feedback)  
+# Run unit tests only (fast feedback)
 uv run pytest tests/unit/
 make test-unit
 
 # Run integration tests only
 uv run pytest tests/integration/
 make test-integration
+
+# Run MCP integration tests only
+uv run pytest tests/mcp/
+make test-mcp
 
 # Run tests with coverage report
 uv run pytest --cov=src --cov-report=html --cov-report=term-missing
@@ -62,6 +66,21 @@ uv run openapi-navigator
 make run
 ```
 
+### Demo and Development
+```bash
+# Start interactive demo with Nanobot
+make demo
+
+# Open MCP Inspector web UI
+make inspect
+
+# Run MCP Inspector CLI
+make inspect-cli
+
+# Run automated inspector tests
+make test-inspector
+```
+
 ### Cleanup
 ```bash
 # Clean up generated files
@@ -85,9 +104,11 @@ make clean
 - Handles both OpenAPI 3.x (`components/schemas`) and Swagger 2.x (`definitions`) schema locations
 
 **MCP Server** (`server.py`):
-- Exposes 9 MCP tools: `load_spec`, `load_spec_from_url`, `list_loaded_specs`, `unload_spec`, `search_endpoints`, `get_endpoint`, `search_schemas`, `get_schema`, `make_api_request`
+- Exposes 10 MCP tools: `load_spec`, `load_spec_from_url`, `list_loaded_specs`, `unload_spec`, `search_endpoints`, `get_endpoint`, `search_schemas`, `get_schema`, `get_spec_metadata`, `make_api_request`
 - Uses FastMCP framework for tool registration
 - Maintains global `_spec_manager` instance shared across all tools
+- Supports pagination for `search_endpoints` and `search_schemas` with `limit` (max 200) and `offset` parameters
+- Provides summary-only mode for `get_endpoint` to reduce token usage
 
 ### Format Detection Strategy
 
@@ -101,6 +122,8 @@ The codebase implements a robust format detection strategy (`spec_manager.py:309
 - **Fuzzy Search**: Uses `fuzzywuzzy` library for intelligent matching across endpoint paths, summaries, and operation IDs
 - **Fast Indexing**: Pre-builds endpoint and schema indexes during spec loading for O(1) lookups
 - **Reference Preservation**: Maintains `$ref` structures without automatic resolution, letting agents decide when to resolve
+- **Pagination Support**: Search operations support `limit` and `offset` parameters for handling large datasets efficiently
+- **Summary-Only Views**: Endpoints can return condensed information to reduce token usage with `summary_only` parameter
 
 ## API Request Tool
 
@@ -127,12 +150,14 @@ make_api_request(
 
 ## Testing Structure
 
-- **Unit Tests**:
+- **Unit Tests** (`tests/unit/`):
   - `test_spec_manager.py` - 31 tests covering core SpecManager functionality
   - `test_api_request.py` - 25+ tests covering make_api_request functionality
-- **Integration Tests**:
+- **Integration Tests** (`tests/integration/`):
   - `test_integration.py` - 5 end-to-end workflow tests
   - `test_api_request_integration.py` - 10 real API integration tests using httpbin.org
+- **MCP Integration Tests** (`tests/mcp/`):
+  - `test_mcp_integration.py` - 20+ tests covering MCP protocol layer, pagination, and summary features
 - **Test Configuration** - pytest with asyncio support, 65% coverage requirement
 - **Fixtures** (`tests/conftest.py`) - Shared test utilities and mock data
 

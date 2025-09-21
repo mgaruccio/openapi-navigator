@@ -10,11 +10,14 @@ An MCP (Model Context Protocol) server that provides tools for navigating and qu
 
 - **Load OpenAPI specs** from local files or URLs
 - **Navigate endpoints** with filtering by tags
-- **Search endpoints** using fuzzy matching across paths, summaries, and operation IDs
-- **Explore schemas** and their definitions
+- **Search endpoints** using fuzzy matching across paths, summaries, and operation IDs with **pagination support**
+- **Explore schemas** and their definitions with **pagination support**
+- **Summary-only views** - get condensed endpoint information to reduce token usage
+- **API interaction** - make direct REST API calls to test endpoints
 - **Multiple spec support** - load and manage multiple OpenAPI specifications simultaneously
 - **Smart indexing** for fast lookups and searches
 - **Reference preservation** - maintains `$ref` structures for agents to decide when to resolve
+- **Comprehensive demo environment** - interactive testing with Nanobot and MCP Inspector
 
 ## Installation
 
@@ -90,12 +93,20 @@ The OpenAPI Navigator provides the following tools:
 - **`unload_spec`** - Remove a specification from memory
 
 ### Endpoint Operations
-- **`search_endpoints`** - Search endpoints using fuzzy matching. Use `""` or `"a"` as the query to get all endpoints
+- **`search_endpoints`** - Search endpoints using fuzzy matching with pagination support. Use `""` or `"a"` as the query to get all endpoints
+  - Parameters: `spec_id`, `query`, `limit` (max 200), `offset` (default 0)
 - **`get_endpoint`** - Get detailed information for a specific endpoint by path and method
+  - Parameters: `spec_id`, `path`, `method`, `summary_only` (boolean, default false)
 
 ### Schema Operations
-- **`search_schemas`** - Search schema names using fuzzy matching. Use `""` or `"a"` as the query to get all schemas
+- **`search_schemas`** - Search schema names using fuzzy matching with pagination support. Use `""` or `"a"` as the query to get all schemas
+  - Parameters: `spec_id`, `query`, `limit` (max 200), `offset` (default 0)
 - **`get_schema`** - Get detailed information for a specific schema by name
+- **`get_spec_metadata`** - Get comprehensive metadata about a loaded OpenAPI specification
+
+### API Interaction
+- **`make_api_request`** - Make direct REST API calls to test endpoints
+  - Parameters: `url`, `method` (GET/POST/PUT/PATCH/DELETE/etc.), `headers`, `params`, `data`, `timeout`
 
 ## Example Workflow
 
@@ -104,9 +115,10 @@ The OpenAPI Navigator provides the following tools:
    load_spec("/absolute/path/to/schema.yaml", "my-api")
    ```
 
-2. **Get all endpoints:**
+2. **Get all endpoints with pagination:**
    ```
-   search_endpoints("my-api", "")
+   search_endpoints("my-api", "", 50, 0)  # First 50 endpoints
+   search_endpoints("my-api", "", 50, 50) # Next 50 endpoints
    ```
 
 3. **Get all schemas:**
@@ -119,15 +131,71 @@ The OpenAPI Navigator provides the following tools:
    search_endpoints("my-api", "virtual machine")
    ```
 
-5. **Get endpoint details:**
+5. **Get endpoint details (summary view):**
    ```
-   get_endpoint("my-api", "/api/virtualization/virtual-machines/", "GET")
+   get_endpoint("my-api", "/api/virtualization/virtual-machines/", "GET", true)
    ```
 
-6. **Get schema details:**
+6. **Get full endpoint details:**
+   ```
+   get_endpoint("my-api", "/api/virtualization/virtual-machines/", "GET", false)
+   ```
+
+7. **Get schema details:**
    ```
    get_schema("my-api", "VirtualMachine")
    ```
+
+8. **Test an API endpoint:**
+   ```
+   make_api_request("https://api.example.com/users", "GET", {"Authorization": "Bearer token"})
+   ```
+
+9. **Get spec metadata:**
+   ```
+   get_spec_metadata("my-api")
+   ```
+
+## Demo Environment
+
+The OpenAPI Navigator includes a comprehensive demo environment for interactive testing and development.
+
+### Nanobot Integration
+
+Run the interactive demo using Nanobot (requires installation):
+
+```bash
+# Install nanobot
+brew install nanobot-ai/tap/nanobot
+
+# Create .env file with your API key
+echo "ANTHROPIC_API_KEY=your-key-here" > .env
+
+# Start the demo
+make demo
+```
+
+The demo will be available at `http://localhost:8080` and provides a web interface for testing OpenAPI Navigator features.
+
+### MCP Inspector Integration
+
+#### Web UI Inspector
+```bash
+make inspect
+```
+Opens MCP Inspector web UI at `http://localhost:6274` for interactive tool testing.
+
+#### CLI Inspector
+```bash
+make inspect-cli
+```
+Lists all available tools via command line.
+
+#### Automated Inspector Tests
+```bash
+make test-inspector
+```
+Runs automated tests using MCP Inspector CLI to validate tool functionality.
 
 ## Development
 

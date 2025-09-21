@@ -89,29 +89,74 @@ def list_loaded_specs() -> List[str]:
 
 
 @mcp.tool
-def get_endpoint(spec_id: str, path: str, method: str) -> Optional[Dict[str, Any]]:
+def get_endpoint(
+    spec_id: str, path: str, method: str, summary_only: bool = False
+) -> Optional[Dict[str, Any]]:
     """
-    Get the complete operation definition for a specific endpoint.
+    Get the operation definition for a specific endpoint.
 
     Args:
         spec_id: ID of the loaded spec to query
         path: API path (e.g., '/users/{id}')
         method: HTTP method (e.g., 'GET', 'POST')
+        summary_only: If True, return only essential fields to reduce token usage (default: False)
 
     Returns:
-        The raw operation object from the OpenAPI spec, or None if not found
+        The operation object from the OpenAPI spec (full or summary), or None if not found
     """
     spec = _spec_manager.get_spec(spec_id)
     if not spec:
         raise ValueError(f"No spec found with ID: {spec_id}")
 
-    return spec.get_endpoint(path, method.upper())
+    endpoint = spec.get_endpoint(path, method.upper())
+    if not endpoint:
+        return None
+
+    if summary_only:
+        # Return only essential information to reduce token usage
+        return {
+            "summary": endpoint.get("summary", ""),
+            "description": endpoint.get("description", ""),
+            "operationId": endpoint.get("operationId", ""),
+            "tags": endpoint.get("tags", []),
+            "parameters": [
+                {
+                    "name": p.get("name", ""),
+                    "in": p.get("in", ""),
+                    "required": p.get("required", False),
+                    "type": p.get("schema", {}).get("type", p.get("type", "")),
+                    "description": p.get("description", ""),
+                }
+                for p in endpoint.get("parameters", [])
+            ],
+            "responses": {
+                code: {
+                    "description": resp.get("description", ""),
+                    "content_types": list(resp.get("content", {}).keys())
+                    if "content" in resp
+                    else [],
+                }
+                for code, resp in endpoint.get("responses", {}).items()
+            },
+            "requestBody": {
+                "required": endpoint.get("requestBody", {}).get("required", False),
+                "content_types": list(
+                    endpoint.get("requestBody", {}).get("content", {}).keys()
+                ),
+            }
+            if "requestBody" in endpoint
+            else None,
+        }
+
+    return endpoint
 
 
 @mcp.tool
-def search_endpoints(spec_id: str, query: str) -> List[Dict[str, Any]]:
+def search_endpoints(
+    spec_id: str, query: str, limit: int = 50, offset: int = 0
+) -> Dict[str, Any]:
     """
-    Search endpoints using fuzzy matching across paths, summaries, and operation IDs.
+    Search endpoints using fuzzy matching across paths, summaries, and operation IDs with pagination.
 
     To get a full list of all endpoints, use an empty string "" or a very short query like "a" as the search term.
     The search will return all endpoints with a relevance score of 100 when the query is very short.
@@ -119,15 +164,22 @@ def search_endpoints(spec_id: str, query: str) -> List[Dict[str, Any]]:
     Args:
         spec_id: ID of the loaded spec to query
         query: Search query string. Use "" or "a" to get all endpoints.
+        limit: Maximum number of results to return (default 50, max 200)
+        offset: Number of results to skip for pagination (default 0)
 
     Returns:
-        List of matching endpoints with relevance scores
+        Dictionary containing:
+        - endpoints: List of matching endpoints with relevance scores
+        - total: Total number of matches (before pagination)
+        - limit: Applied limit
+        - offset: Applied offset
+        - has_more: Whether there are more results available
     """
     spec = _spec_manager.get_spec(spec_id)
     if not spec:
         raise ValueError(f"No spec found with ID: {spec_id}")
 
-    return spec.search_endpoints(query)
+    return spec.search_endpoints(query, limit, offset)
 
 
 @mcp.tool
@@ -150,9 +202,11 @@ def get_schema(spec_id: str, schema_name: str) -> Optional[Dict[str, Any]]:
 
 
 @mcp.tool
-def search_schemas(spec_id: str, query: str) -> List[Dict[str, Any]]:
+def search_schemas(
+    spec_id: str, query: str, limit: int = 50, offset: int = 0
+) -> Dict[str, Any]:
     """
-    Search schema names using fuzzy matching.
+    Search schema names using fuzzy matching with pagination.
 
     To get a full list of all schemas, use an empty string "" or a very short query like "a" as the search term.
     The search will return all schemas with a relevance score of 100 when the query is very short.
@@ -160,15 +214,22 @@ def search_schemas(spec_id: str, query: str) -> List[Dict[str, Any]]:
     Args:
         spec_id: ID of the loaded spec to query
         query: Search query string. Use "" or "a" to get all schemas.
+        limit: Maximum number of results to return (default 50, max 200)
+        offset: Number of results to skip for pagination (default 0)
 
     Returns:
-        List of matching schema names with relevance scores
+        Dictionary containing:
+        - schemas: List of matching schema names with relevance scores
+        - total: Total number of matches (before pagination)
+        - limit: Applied limit
+        - offset: Applied offset
+        - has_more: Whether there are more results available
     """
     spec = _spec_manager.get_spec(spec_id)
     if not spec:
         raise ValueError(f"No spec found with ID: {spec_id}")
 
-    return spec.search_schemas(query)
+    return spec.search_schemas(query, limit, offset)
 
 
 @mcp.tool

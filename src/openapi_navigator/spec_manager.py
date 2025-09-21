@@ -109,7 +109,45 @@ class OpenAPISpec:
         """Get a specific endpoint by path and method."""
         for endpoint in self.endpoints:
             if endpoint["path"] == path and endpoint["method"] == method:
-                return endpoint["operation"]
+                operation = endpoint["operation"]
+
+                # Special handling for root endpoint - provide condensed view to reduce token usage
+                if path == "/" and operation:
+                    # Check if this is a very large operation (likely contains full API documentation)
+                    operation_str = str(operation)
+                    if len(operation_str) > 5000:  # If operation is very large
+                        return {
+                            "summary": operation.get("summary", "API Root Endpoint"),
+                            "description": operation.get("description", "")[:500]
+                            + (
+                                "..."
+                                if len(operation.get("description", "")) > 500
+                                else ""
+                            ),
+                            "operationId": operation.get("operationId", ""),
+                            "tags": operation.get("tags", []),
+                            "_note": "This is a condensed view of the root endpoint. Use summary_only=False on get_endpoint for full details.",
+                            "responses": {
+                                code: {
+                                    "description": resp.get("description", "")[:200]
+                                    + (
+                                        "..."
+                                        if len(resp.get("description", "")) > 200
+                                        else ""
+                                    ),
+                                    "content_types": list(
+                                        resp.get("content", {}).keys()
+                                    )
+                                    if "content" in resp
+                                    else [],
+                                }
+                                for code, resp in list(
+                                    operation.get("responses", {}).items()
+                                )[:3]  # Limit to first 3 responses
+                            },
+                        }
+
+                return operation
         return None
 
     def list_endpoints(self, tag: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -144,13 +182,33 @@ class OpenAPISpec:
         logger.info(f"Returning {len(filtered)} endpoints filtered by tag '{tag}'")
         return filtered
 
-    def search_endpoints(self, query: str) -> List[Dict[str, Any]]:
-        """Search endpoints using fuzzy matching."""
+    def search_endpoints(
+        self, query: str, limit: int = 50, offset: int = 0
+    ) -> Dict[str, Any]:
+        """Search endpoints using fuzzy matching with pagination.
+
+        Args:
+            query: Search query string. Use "" or "a" to get all endpoints.
+            limit: Maximum number of results to return (default 50, max 200)
+            offset: Number of results to skip for pagination (default 0)
+
+        Returns:
+            Dictionary containing:
+            - endpoints: List of matching endpoints
+            - total: Total number of matches (before pagination)
+            - limit: Applied limit
+            - offset: Applied offset
+            - has_more: Whether there are more results available
+        """
+        # Validate and clamp limit
+        limit = max(1, min(limit, 200))
+        offset = max(0, offset)
+
         # If query is empty or very short, return all endpoints with high scores
         if not query or len(query.strip()) <= 2:
-            results = []
+            all_results = []
             for endpoint in self.endpoints:
-                results.append(
+                all_results.append(
                     {
                         "method": endpoint["method"],
                         "path": endpoint["path"],
@@ -159,13 +217,24 @@ class OpenAPISpec:
                         "score": 100,
                     }
                 )
-            return results
+
+            # Apply pagination
+            total = len(all_results)
+            paginated_results = all_results[offset : offset + limit]
+
+            return {
+                "endpoints": paginated_results,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total,
+            }
 
         try:
             from fuzzywuzzy import fuzz
         except ImportError:
             # Fallback to simple substring search if fuzzywuzzy is not available
-            results = []
+            all_results = []
             query_lower = query.lower()
             for endpoint in self.endpoints:
                 if (
@@ -173,7 +242,7 @@ class OpenAPISpec:
                     or query_lower in endpoint["summary"].lower()
                     or query_lower in endpoint["operationId"].lower()
                 ):
-                    results.append(
+                    all_results.append(
                         {
                             "method": endpoint["method"],
                             "path": endpoint["path"],
@@ -182,9 +251,20 @@ class OpenAPISpec:
                             "score": 100,
                         }
                     )
-            return results
 
-        results = []
+            # Apply pagination
+            total = len(all_results)
+            paginated_results = all_results[offset : offset + limit]
+
+            return {
+                "endpoints": paginated_results,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total,
+            }
+
+        all_results = []
         for endpoint in self.endpoints:
             # Search in path, summary, operationId
             path_score = fuzz.partial_ratio(query.lower(), endpoint["path"].lower())
@@ -199,7 +279,7 @@ class OpenAPISpec:
             best_score = max(path_score, summary_score, op_id_score)
 
             if best_score > 50:  # Threshold for relevance
-                results.append(
+                all_results.append(
                     {
                         "method": endpoint["method"],
                         "path": endpoint["path"],
@@ -210,40 +290,104 @@ class OpenAPISpec:
                 )
 
         # Sort by relevance score
-        results.sort(key=lambda x: x["score"], reverse=True)
-        return results
+        all_results.sort(key=lambda x: x["score"], reverse=True)
 
-    def search_schemas(self, query: str) -> List[Dict[str, Any]]:
-        """Search schema names using fuzzy matching."""
+        # Apply pagination
+        total = len(all_results)
+        paginated_results = all_results[offset : offset + limit]
+
+        return {
+            "endpoints": paginated_results,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + limit < total,
+        }
+
+    def search_schemas(
+        self, query: str, limit: int = 50, offset: int = 0
+    ) -> Dict[str, Any]:
+        """Search schema names using fuzzy matching with pagination.
+
+        Args:
+            query: Search query string. Use "" or "a" to get all schemas.
+            limit: Maximum number of results to return (default 50, max 200)
+            offset: Number of results to skip for pagination (default 0)
+
+        Returns:
+            Dictionary containing:
+            - schemas: List of matching schema names
+            - total: Total number of matches (before pagination)
+            - limit: Applied limit
+            - offset: Applied offset
+            - has_more: Whether there are more results available
+        """
+        # Validate and clamp limit
+        limit = max(1, min(limit, 200))
+        offset = max(0, offset)
+
         # If query is empty or very short, return all schemas with high scores
         if not query or len(query.strip()) <= 2:
-            results = []
+            all_results = []
             for schema_name in self.schemas.keys():
-                results.append({"name": schema_name, "score": 100})
-            return results
+                all_results.append({"name": schema_name, "score": 100})
+
+            # Apply pagination
+            total = len(all_results)
+            paginated_results = all_results[offset : offset + limit]
+
+            return {
+                "schemas": paginated_results,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total,
+            }
 
         try:
             from fuzzywuzzy import fuzz
         except ImportError:
             # Fallback to simple substring search if fuzzywuzzy is not available
-            results = []
+            all_results = []
             query_lower = query.lower()
             for schema_name in self.schemas.keys():
                 if query_lower in schema_name.lower():
-                    results.append({"name": schema_name, "score": 100})
-            return results
+                    all_results.append({"name": schema_name, "score": 100})
 
-        results = []
+            # Apply pagination
+            total = len(all_results)
+            paginated_results = all_results[offset : offset + limit]
+
+            return {
+                "schemas": paginated_results,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total,
+            }
+
+        all_results = []
         for schema_name in self.schemas.keys():
             # Search in schema name
             score = fuzz.partial_ratio(query.lower(), schema_name.lower())
 
             if score > 50:  # Threshold for relevance
-                results.append({"name": schema_name, "score": score})
+                all_results.append({"name": schema_name, "score": score})
 
         # Sort by relevance score
-        results.sort(key=lambda x: x["score"], reverse=True)
-        return results
+        all_results.sort(key=lambda x: x["score"], reverse=True)
+
+        # Apply pagination
+        total = len(all_results)
+        paginated_results = all_results[offset : offset + limit]
+
+        return {
+            "schemas": paginated_results,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + limit < total,
+        }
 
     def get_schema(self, schema_name: str) -> Optional[Dict[str, Any]]:
         """Get a specific schema by name."""

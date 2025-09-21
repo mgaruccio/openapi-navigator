@@ -122,8 +122,8 @@ class TestApiRequestIntegration:
             spec = manager.get_spec("pet-store")
 
             # 2. Explore available endpoints
-            endpoints = spec.search_endpoints("")
-            assert len(endpoints) == 3
+            endpoints_result = spec.search_endpoints("")
+            assert len(endpoints_result["endpoints"]) == 3
 
             # 3. Get base URL info from spec metadata
             metadata = spec.get_spec_metadata()

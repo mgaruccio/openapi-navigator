@@ -31,8 +31,8 @@ class TestIntegrationWorkflows:
             assert spec.spec_id == "pet-store"
 
             # 3. Test endpoint operations
-            endpoints = spec.search_endpoints("")
-            assert len(endpoints) == 3
+            endpoints_result = spec.search_endpoints("")
+            assert len(endpoints_result["endpoints"]) == 3
 
             # Test specific endpoint retrieval
             list_pets = spec.get_endpoint("/pets", "GET")
@@ -40,14 +40,14 @@ class TestIntegrationWorkflows:
             assert list_pets["operationId"] == "listPets"
 
             # Test endpoint search
-            create_results = spec.search_endpoints("create")
-            assert len(create_results) == 1
-            assert create_results[0]["summary"] == "Create a new pet"
+            create_result = spec.search_endpoints("create")
+            assert len(create_result["endpoints"]) == 1
+            assert create_result["endpoints"][0]["summary"] == "Create a new pet"
 
             # 4. Test schema operations
-            schemas = spec.search_schemas("")
-            assert len(schemas) == 1
-            assert schemas[0]["name"] == "Pet"
+            schemas_result = spec.search_schemas("")
+            assert len(schemas_result["schemas"]) == 1
+            assert schemas_result["schemas"][0]["name"] == "Pet"
 
             # Test specific schema retrieval
             pet_schema = spec.get_schema("Pet")
@@ -56,9 +56,9 @@ class TestIntegrationWorkflows:
             assert "name" in pet_schema["required"]
 
             # Test schema search
-            pet_results = spec.search_schemas("Pet")
-            assert len(pet_results) == 1
-            assert pet_results[0]["name"] == "Pet"
+            pet_result = spec.search_schemas("Pet")
+            assert len(pet_result["schemas"]) == 1
+            assert pet_result["schemas"][0]["name"] == "Pet"
 
             # 5. Test metadata
             metadata = spec.get_spec_metadata()
@@ -100,8 +100,8 @@ class TestIntegrationWorkflows:
             assert spec.spec_id == "user-api"
 
             # 3. Test endpoint operations
-            endpoints = spec.search_endpoints("")
-            assert len(endpoints) == 2
+            endpoints_result = spec.search_endpoints("")
+            assert len(endpoints_result["endpoints"]) == 2
 
             # Test specific endpoint retrieval
             list_users = spec.get_endpoint("/users", "GET")
@@ -109,13 +109,13 @@ class TestIntegrationWorkflows:
             assert list_users["operationId"] == "listUsers"
 
             # Test endpoint search
-            user_results = spec.search_endpoints("user")
-            assert len(user_results) == 2
+            user_result = spec.search_endpoints("user")
+            assert len(user_result["endpoints"]) == 2
 
             # 4. Test schema operations
-            schemas = spec.search_schemas("")
-            assert len(schemas) == 1
-            assert schemas[0]["name"] == "User"
+            schemas_result = spec.search_schemas("")
+            assert len(schemas_result["schemas"]) == 1
+            assert schemas_result["schemas"][0]["name"] == "User"
 
             # Test specific schema retrieval
             user_schema = spec.get_schema("User")
@@ -177,20 +177,20 @@ class TestIntegrationWorkflows:
             assert user_spec.spec_data["swagger"] == "2.0"
 
             # Test operations on both specs
-            pet_endpoints = pet_spec.search_endpoints("")
-            user_endpoints = user_spec.search_endpoints("")
+            pet_endpoints_result = pet_spec.search_endpoints("")
+            user_endpoints_result = user_spec.search_endpoints("")
 
-            assert len(pet_endpoints) == 3
-            assert len(user_endpoints) == 2
+            assert len(pet_endpoints_result["endpoints"]) == 3
+            assert len(user_endpoints_result["endpoints"]) == 2
 
             # Test schema operations on both
-            pet_schemas = pet_spec.search_schemas("")
-            user_schemas = user_spec.search_schemas("")
+            pet_schemas_result = pet_spec.search_schemas("")
+            user_schemas_result = user_spec.search_schemas("")
 
-            assert len(pet_schemas) == 1
-            assert len(user_schemas) == 1
-            assert pet_schemas[0]["name"] == "Pet"
-            assert user_schemas[0]["name"] == "User"
+            assert len(pet_schemas_result["schemas"]) == 1
+            assert len(user_schemas_result["schemas"]) == 1
+            assert pet_schemas_result["schemas"][0]["name"] == "Pet"
+            assert user_schemas_result["schemas"][0]["name"] == "User"
 
             # Unload both specs
             manager.unload_spec("pet-store")
@@ -222,8 +222,8 @@ class TestIntegrationWorkflows:
 
             # Test operations on valid spec
             spec = manager.get_spec("test-spec")
-            endpoints = spec.search_endpoints("")
-            assert len(endpoints) == 3
+            endpoints_result = spec.search_endpoints("")
+            assert len(endpoints_result["endpoints"]) == 3
 
             # Test error handling for non-existent endpoints/schemas
             non_existent_endpoint = spec.get_endpoint("/nonexistent", "GET")
@@ -268,31 +268,31 @@ class TestIntegrationWorkflows:
             spec = manager.get_spec("test-spec")
 
             # Test endpoint search variations
-            all_endpoints = spec.search_endpoints("")
-            assert len(all_endpoints) == 3
+            all_endpoints_result = spec.search_endpoints("")
+            assert len(all_endpoints_result["endpoints"]) == 3
 
-            pet_endpoints = spec.search_endpoints("pet")
-            assert len(pet_endpoints) == 3
+            pet_endpoints_result = spec.search_endpoints("pet")
+            assert len(pet_endpoints_result["endpoints"]) == 3
 
-            create_endpoints = spec.search_endpoints("create")
-            assert len(create_endpoints) == 1
+            create_endpoints_result = spec.search_endpoints("create")
+            assert len(create_endpoints_result["endpoints"]) == 1
 
-            list_endpoints = spec.search_endpoints("list")
-            assert len(list_endpoints) == 1
+            list_endpoints_result = spec.search_endpoints("list")
+            assert len(list_endpoints_result["endpoints"]) == 1
 
             # Test schema search variations
-            all_schemas = spec.search_schemas("")
-            assert len(all_schemas) == 1
+            all_schemas_result = spec.search_schemas("")
+            assert len(all_schemas_result["schemas"]) == 1
 
-            pet_schemas = spec.search_schemas("Pet")
-            assert len(pet_schemas) == 1
+            pet_schemas_result = spec.search_schemas("Pet")
+            assert len(pet_schemas_result["schemas"]) == 1
 
             # Test fuzzy matching
-            partial_endpoints = spec.search_endpoints("et")
-            assert len(partial_endpoints) == 3
+            partial_endpoints_result = spec.search_endpoints("et")
+            assert len(partial_endpoints_result["endpoints"]) == 3
 
-            partial_schemas = spec.search_schemas("et")
-            assert len(partial_schemas) == 1
+            partial_schemas_result = spec.search_schemas("et")
+            assert len(partial_schemas_result["schemas"]) == 1
 
             # Clean up
             manager.unload_spec("test-spec")

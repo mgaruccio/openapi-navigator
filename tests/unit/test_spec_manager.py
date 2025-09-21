@@ -69,55 +69,64 @@ class TestOpenAPISpec:
     def test_search_endpoints_empty_query(self, sample_openapi_spec):
         """Test searching endpoints with empty query returns all."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_endpoints("")
+        result = spec.search_endpoints("")
 
-        assert len(results) == 3
+        assert len(result["endpoints"]) == 3
+        assert result["total"] == 3
+        assert not result["has_more"]
         # All should have score 100 for empty query
-        assert all(result["score"] == 100 for result in results)
+        assert all(endpoint["score"] == 100 for endpoint in result["endpoints"])
 
     def test_search_endpoints_specific_query(self, sample_openapi_spec):
         """Test searching endpoints with specific query."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_endpoints("create")
+        result = spec.search_endpoints("create")
 
-        assert len(results) == 1
-        assert results[0]["summary"] == "Create a new pet"
-        assert results[0]["score"] == 100
+        assert len(result["endpoints"]) == 1
+        assert result["total"] == 1
+        assert result["endpoints"][0]["summary"] == "Create a new pet"
+        assert result["endpoints"][0]["score"] == 100
 
     def test_search_endpoints_fuzzy_match(self, sample_openapi_spec):
         """Test fuzzy matching in endpoint search."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_endpoints("pet")
+        result = spec.search_endpoints("pet")
 
-        assert len(results) == 3
+        assert len(result["endpoints"]) == 3
+        assert result["total"] == 3
         # Should find all pet-related endpoints
-        assert all("pet" in result["summary"].lower() for result in results)
+        assert all(
+            "pet" in endpoint["summary"].lower() for endpoint in result["endpoints"]
+        )
 
     def test_search_schemas_empty_query(self, sample_openapi_spec):
         """Test searching schemas with empty query returns all."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_schemas("")
+        result = spec.search_schemas("")
 
-        assert len(results) == 1
-        assert results[0]["name"] == "Pet"
-        assert results[0]["score"] == 100
+        assert len(result["schemas"]) == 1
+        assert result["total"] == 1
+        assert result["schemas"][0]["name"] == "Pet"
+        assert result["schemas"][0]["score"] == 100
 
     def test_search_schemas_specific_query(self, sample_openapi_spec):
         """Test searching schemas with specific query."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_schemas("Pet")
+        result = spec.search_schemas("Pet")
 
-        assert len(results) == 1
-        assert results[0]["name"] == "Pet"
-        assert results[0]["score"] == 100
+        assert len(result["schemas"]) == 1
+        assert result["total"] == 1
+        assert result["schemas"][0]["name"] == "Pet"
+        assert result["schemas"][0]["score"] == 100
 
     def test_search_schemas_fuzzy_match(self, sample_openapi_spec):
         """Test fuzzy matching in schema search."""
         spec = OpenAPISpec("test-spec", sample_openapi_spec)
-        results = spec.search_schemas("et")
+        result = spec.search_schemas("et")
 
-        assert len(results) == 1
-        assert results[0]["name"] == "Pet"
+        assert len(result["schemas"]) == 1
+        assert result["total"] == 1
+        assert result["schemas"][0]["name"] == "Pet"
 
     def test_get_spec_metadata_openapi_3(self, sample_openapi_spec):
         """Test getting metadata from OpenAPI 3.0 spec."""

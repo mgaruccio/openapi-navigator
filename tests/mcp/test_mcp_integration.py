@@ -13,9 +13,7 @@ import pytest
 import json
 import tempfile
 import os
-from pathlib import Path
-
-from fastmcp import FastMCP, Client
+from fastmcp import Client
 
 
 @pytest.fixture
@@ -26,7 +24,7 @@ def sample_openapi_spec():
         "info": {
             "title": "Sample Pet Store API",
             "version": "1.0.0",
-            "description": "A sample API for managing pets"
+            "description": "A sample API for managing pets",
         },
         "paths": {
             "/pets": {
@@ -41,12 +39,12 @@ def sample_openapi_spec():
                                 "application/json": {
                                     "schema": {
                                         "type": "array",
-                                        "items": {"$ref": "#/components/schemas/Pet"}
+                                        "items": {"$ref": "#/components/schemas/Pet"},
                                     }
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 },
                 "post": {
                     "summary": "Create a new pet",
@@ -58,7 +56,7 @@ def sample_openapi_spec():
                             "application/json": {
                                 "schema": {"$ref": "#/components/schemas/Pet"}
                             }
-                        }
+                        },
                     },
                     "responses": {
                         "201": {
@@ -67,10 +65,10 @@ def sample_openapi_spec():
                                 "application/json": {
                                     "schema": {"$ref": "#/components/schemas/Pet"}
                                 }
-                            }
+                            },
                         }
-                    }
-                }
+                    },
+                },
             },
             "/pets/{petId}": {
                 "get": {
@@ -82,7 +80,7 @@ def sample_openapi_spec():
                             "name": "petId",
                             "in": "path",
                             "required": True,
-                            "schema": {"type": "integer"}
+                            "schema": {"type": "integer"},
                         }
                     ],
                     "responses": {
@@ -92,11 +90,11 @@ def sample_openapi_spec():
                                 "application/json": {
                                     "schema": {"$ref": "#/components/schemas/Pet"}
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 }
-            }
+            },
         },
         "components": {
             "schemas": {
@@ -106,24 +104,21 @@ def sample_openapi_spec():
                     "properties": {
                         "id": {
                             "type": "integer",
-                            "description": "Unique identifier for the pet"
+                            "description": "Unique identifier for the pet",
                         },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the pet"
-                        },
+                        "name": {"type": "string", "description": "Name of the pet"},
                         "species": {
                             "type": "string",
-                            "description": "Species of the pet"
+                            "description": "Species of the pet",
                         },
                         "age": {
                             "type": "integer",
-                            "description": "Age of the pet in years"
-                        }
-                    }
+                            "description": "Age of the pet in years",
+                        },
+                    },
                 }
             }
-        }
+        },
     }
 
 
@@ -148,6 +143,7 @@ def mcp_server():
     """Create an instance of our OpenAPI Navigator MCP server."""
     # Import our server module
     from openapi_navigator.server import mcp
+
     return mcp
 
 
@@ -171,7 +167,7 @@ class TestMCPServerBasics:
                 "search_schemas",
                 "get_schema",
                 "get_spec_metadata",
-                "make_api_request"
+                "make_api_request",
             ]
 
             for expected_tool in expected_tools:
@@ -181,10 +177,9 @@ class TestMCPServerBasics:
         """Test loading a spec via MCP tools."""
         async with Client(mcp_server) as client:
             # Load spec
-            result = await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-mcp-spec"
-            })
+            result = await client.call_tool(
+                "load_spec", {"file_path": temp_spec_file, "spec_id": "test-mcp-spec"}
+            )
 
             # Should return the spec ID
             assert result.content[0].text == "test-mcp-spec"
@@ -197,22 +192,21 @@ class TestMCPServerBasics:
 class TestMCPPaginationFeatures:
     """Test new pagination features via MCP protocol."""
 
-    async def test_search_endpoints_pagination_parameters(self, mcp_server, temp_spec_file):
+    async def test_search_endpoints_pagination_parameters(
+        self, mcp_server, temp_spec_file
+    ):
         """Test that pagination parameters work through MCP layer."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-pagination"
-            })
+            await client.call_tool(
+                "load_spec", {"file_path": temp_spec_file, "spec_id": "test-pagination"}
+            )
 
             # Test search with pagination parameters
-            result = await client.call_tool("search_endpoints", {
-                "spec_id": "test-pagination",
-                "query": "",
-                "limit": 2,
-                "offset": 0
-            })
+            result = await client.call_tool(
+                "search_endpoints",
+                {"spec_id": "test-pagination", "query": "", "limit": 2, "offset": 0},
+            )
 
             # Parse the JSON response
             response_data = json.loads(result.content[0].text)
@@ -235,18 +229,21 @@ class TestMCPPaginationFeatures:
         """Test pagination second page."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-pagination-page2"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-pagination-page2"},
+            )
 
             # Test second page
-            result = await client.call_tool("search_endpoints", {
-                "spec_id": "test-pagination-page2",
-                "query": "",
-                "limit": 2,
-                "offset": 2
-            })
+            result = await client.call_tool(
+                "search_endpoints",
+                {
+                    "spec_id": "test-pagination-page2",
+                    "query": "",
+                    "limit": 2,
+                    "offset": 2,
+                },
+            )
 
             response_data = json.loads(result.content[0].text)
 
@@ -261,18 +258,21 @@ class TestMCPPaginationFeatures:
         """Test schema search pagination via MCP."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-schema-pagination"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-schema-pagination"},
+            )
 
             # Test schema search with pagination
-            result = await client.call_tool("search_schemas", {
-                "spec_id": "test-schema-pagination",
-                "query": "",
-                "limit": 1,
-                "offset": 0
-            })
+            result = await client.call_tool(
+                "search_schemas",
+                {
+                    "spec_id": "test-schema-pagination",
+                    "query": "",
+                    "limit": 1,
+                    "offset": 0,
+                },
+            )
 
             response_data = json.loads(result.content[0].text)
 
@@ -296,18 +296,20 @@ class TestMCPSummaryFeatures:
         """Test summary_only parameter via MCP."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-summary"
-            })
+            await client.call_tool(
+                "load_spec", {"file_path": temp_spec_file, "spec_id": "test-summary"}
+            )
 
             # Get endpoint with summary_only=True
-            result = await client.call_tool("get_endpoint", {
-                "spec_id": "test-summary",
-                "path": "/pets",
-                "method": "GET",
-                "summary_only": True
-            })
+            result = await client.call_tool(
+                "get_endpoint",
+                {
+                    "spec_id": "test-summary",
+                    "path": "/pets",
+                    "method": "GET",
+                    "summary_only": True,
+                },
+            )
 
             response_data = json.loads(result.content[0].text)
 
@@ -333,26 +335,32 @@ class TestMCPSummaryFeatures:
         """Test difference between full and summary endpoint responses."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-full-vs-summary"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-full-vs-summary"},
+            )
 
             # Get full endpoint
-            full_result = await client.call_tool("get_endpoint", {
-                "spec_id": "test-full-vs-summary",
-                "path": "/pets",
-                "method": "GET",
-                "summary_only": False
-            })
+            full_result = await client.call_tool(
+                "get_endpoint",
+                {
+                    "spec_id": "test-full-vs-summary",
+                    "path": "/pets",
+                    "method": "GET",
+                    "summary_only": False,
+                },
+            )
 
             # Get summary endpoint
-            summary_result = await client.call_tool("get_endpoint", {
-                "spec_id": "test-full-vs-summary",
-                "path": "/pets",
-                "method": "GET",
-                "summary_only": True
-            })
+            summary_result = await client.call_tool(
+                "get_endpoint",
+                {
+                    "spec_id": "test-full-vs-summary",
+                    "path": "/pets",
+                    "method": "GET",
+                    "summary_only": True,
+                },
+            )
 
             full_data = json.loads(full_result.content[0].text)
             summary_data = json.loads(summary_result.content[0].text)
@@ -378,10 +386,9 @@ class TestMCPErrorHandling:
         async with Client(mcp_server) as client:
             # Try to use non-existent spec
             with pytest.raises(Exception) as exc_info:
-                await client.call_tool("search_endpoints", {
-                    "spec_id": "non-existent-spec",
-                    "query": ""
-                })
+                await client.call_tool(
+                    "search_endpoints", {"spec_id": "non-existent-spec", "query": ""}
+                )
 
             # Should get a meaningful error
             assert "No spec found with ID" in str(exc_info.value)
@@ -390,29 +397,35 @@ class TestMCPErrorHandling:
         """Test pagination parameter validation."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-param-validation"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-param-validation"},
+            )
 
             # Test with limit > 200 (should be clamped)
-            result = await client.call_tool("search_endpoints", {
-                "spec_id": "test-param-validation",
-                "query": "",
-                "limit": 500,  # Should be clamped to 200
-                "offset": 0
-            })
+            result = await client.call_tool(
+                "search_endpoints",
+                {
+                    "spec_id": "test-param-validation",
+                    "query": "",
+                    "limit": 500,  # Should be clamped to 200
+                    "offset": 0,
+                },
+            )
 
             response_data = json.loads(result.content[0].text)
             assert response_data["limit"] == 200  # Should be clamped
 
             # Test with negative offset (should be clamped to 0)
-            result = await client.call_tool("search_endpoints", {
-                "spec_id": "test-param-validation",
-                "query": "",
-                "limit": 10,
-                "offset": -5  # Should be clamped to 0
-            })
+            result = await client.call_tool(
+                "search_endpoints",
+                {
+                    "spec_id": "test-param-validation",
+                    "query": "",
+                    "limit": 10,
+                    "offset": -5,  # Should be clamped to 0
+                },
+            )
 
             response_data = json.loads(result.content[0].text)
             assert response_data["offset"] == 0  # Should be clamped
@@ -421,20 +434,21 @@ class TestMCPErrorHandling:
 class TestMCPBackwardCompatibility:
     """Test that new features maintain backward compatibility."""
 
-    async def test_search_endpoints_without_pagination(self, mcp_server, temp_spec_file):
+    async def test_search_endpoints_without_pagination(
+        self, mcp_server, temp_spec_file
+    ):
         """Test that search_endpoints works without pagination params."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-backward-compat"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-backward-compat"},
+            )
 
             # Call without pagination parameters (should use defaults)
-            result = await client.call_tool("search_endpoints", {
-                "spec_id": "test-backward-compat",
-                "query": ""
-            })
+            result = await client.call_tool(
+                "search_endpoints", {"spec_id": "test-backward-compat", "query": ""}
+            )
 
             response_data = json.loads(result.content[0].text)
 
@@ -442,23 +456,22 @@ class TestMCPBackwardCompatibility:
             assert "endpoints" in response_data
             assert "total" in response_data
             assert response_data["limit"] == 50  # Default limit
-            assert response_data["offset"] == 0   # Default offset
+            assert response_data["offset"] == 0  # Default offset
 
     async def test_get_endpoint_without_summary_only(self, mcp_server, temp_spec_file):
         """Test that get_endpoint works without summary_only param."""
         async with Client(mcp_server) as client:
             # Load spec
-            await client.call_tool("load_spec", {
-                "file_path": temp_spec_file,
-                "spec_id": "test-default-summary"
-            })
+            await client.call_tool(
+                "load_spec",
+                {"file_path": temp_spec_file, "spec_id": "test-default-summary"},
+            )
 
             # Call without summary_only parameter (should default to False)
-            result = await client.call_tool("get_endpoint", {
-                "spec_id": "test-default-summary",
-                "path": "/pets",
-                "method": "GET"
-            })
+            result = await client.call_tool(
+                "get_endpoint",
+                {"spec_id": "test-default-summary", "path": "/pets", "method": "GET"},
+            )
 
             # Should return full endpoint data
             response_data = json.loads(result.content[0].text)
@@ -468,4 +481,7 @@ class TestMCPBackwardCompatibility:
             assert "responses" in response_data
             if "200" in response_data["responses"]:
                 # Full response should have content, not content_types
-                assert "content" in response_data["responses"]["200"] or "description" in response_data["responses"]["200"]
+                assert (
+                    "content" in response_data["responses"]["200"]
+                    or "description" in response_data["responses"]["200"]
+                )
